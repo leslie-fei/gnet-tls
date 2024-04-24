@@ -1650,7 +1650,7 @@ func (c *Conn) handshakeContext(ctx context.Context) (ret error) {
 	// If data not enough return wait read more data
 	if errors.Is(c.handshakeErr, ErrNotEnough) {
 		c.handshakeErr = nil
-		return nil
+		return ErrNotEnough
 	}
 	if c.handshakeErr == nil {
 		c.handshakes++
