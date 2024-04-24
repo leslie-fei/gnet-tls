@@ -1,6 +1,6 @@
 module github.com/leslie-fei/gnettls
 
-go 1.22
+go 1.21
 
 require (
 	github.com/panjf2000/gnet/v2 v2.5.0
