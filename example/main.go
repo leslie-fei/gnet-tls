@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	logging.Infof("version: 0.0.1")
+	logging.Infof("version: 0.0.2")
 	go func() {
 		err := http.ListenAndServe("0.0.0.0:6060", nil)
 		if nil != err {

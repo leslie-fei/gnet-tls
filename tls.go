@@ -177,8 +177,22 @@ func (h *tlsEventHandler) OnTraffic(c gnet.Conn) (action gnet.Action) {
 
 	// TLS handshake
 	if !tc.rawTLSConn.HandshakeCompleted() {
+		buffered := tc.raw.InboundBuffered()
+		noReadCount := 0
 		for tc.raw.InboundBuffered() > 0 {
+			if noReadCount >= 10 {
+				logging.Errorf("max retry handshake inbound buffered: %d", tc.raw.InboundBuffered())
+				break
+			}
 			err := tc.rawTLSConn.Handshake()
+			// 读完以后还是这么大
+			if buffered == tc.raw.InboundBuffered() {
+				noReadCount++
+			} else {
+				noReadCount = 0
+			}
+
+			buffered = tc.raw.InboundBuffered()
 
 			// data not enough wait for next round
 			if errors.Is(err, tls.ErrNotEnough) {
