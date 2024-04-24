@@ -17,7 +17,7 @@ import (
 	"hash"
 	"runtime"
 
-	"gnettls/tls/internal/cpu"
+	"github.com/leslie-fei/gnettls/tls/internal/cpu"
 
 	"golang.org/x/crypto/chacha20poly1305"
 )

@@ -11,7 +11,7 @@ import (
 	"crypto/cipher"
 	"hash"
 
-	"gnettls/tls/internal/boring/sig"
+	"github.com/leslie-fei/gnettls/tls/internal/boring/sig"
 )
 
 const available = false

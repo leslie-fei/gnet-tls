@@ -9,7 +9,7 @@ package fipsonly
 import (
 	"testing"
 
-	"gnettls/tls/internal/boring/fipstls"
+	"github.com/leslie-fei/gnettls/tls/internal/boring/fipstls"
 )
 
 func Test(t *testing.T) {

@@ -19,8 +19,8 @@ package fipsonly
 // new source file and not modifying any existing source files.
 
 import (
-	"gnettls/tls/internal/boring/fipstls"
-	"gnettls/tls/internal/boring/sig"
+	"github.com/leslie-fei/gnettls/tls/internal/boring/fipstls"
+	"github.com/leslie-fei/gnettls/tls/internal/boring/sig"
 )
 
 func init() {

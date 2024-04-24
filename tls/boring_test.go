@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"gnettls/tls/internal/boring/fipstls"
+	"github.com/leslie-fei/gnettls/tls/internal/boring/fipstls"
 )
 
 func TestBoringServerProtocolVersion(t *testing.T) {

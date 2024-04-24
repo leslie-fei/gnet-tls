@@ -7,7 +7,7 @@
 package tls
 
 import (
-	"gnettls/tls/internal/boring/fipstls"
+	"github.com/leslie-fei/gnettls/tls/internal/boring/fipstls"
 )
 
 // needFIPS returns fipstls.Required(); it avoids a new import in common.go.
