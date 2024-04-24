@@ -1,4 +1,4 @@
-module gnettls
+module github.com/leslie-fei/gnettls
 
 go 1.22
 

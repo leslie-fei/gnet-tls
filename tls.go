@@ -8,10 +8,10 @@ import (
 	"runtime/debug"
 	"time"
 
+	"github.com/leslie-fei/gnettls/tls"
 	"github.com/panjf2000/gnet/v2"
 	"github.com/panjf2000/gnet/v2/pkg/logging"
 	bbPool "github.com/panjf2000/gnet/v2/pkg/pool/bytebuffer"
-	"gnettls/tls"
 )
 
 type tlsConn struct {

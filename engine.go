@@ -1,8 +1,8 @@
 package gnettls
 
 import (
+	"github.com/leslie-fei/gnettls/tls"
 	"github.com/panjf2000/gnet/v2"
-	"gnettls/tls"
 )
 
 func Run(eventHandler gnet.EventHandler, protoAddr string, tlsConfig *tls.Config, opts ...gnet.Option) error {
