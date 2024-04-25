@@ -182,7 +182,7 @@ func (h *tlsEventHandler) OnTraffic(c gnet.Conn) (action gnet.Action) {
 		for tc.raw.InboundBuffered() > 0 {
 			if noReadCount >= 10 {
 				logging.Errorf("max retry handshake inbound buffered: %d", tc.raw.InboundBuffered())
-				break
+				return gnet.Close
 			}
 			err := tc.rawTLSConn.Handshake()
 			// no data is read
@@ -204,15 +204,19 @@ func (h *tlsEventHandler) OnTraffic(c gnet.Conn) (action gnet.Action) {
 				return gnet.Close
 			}
 
+			// handshake completed to fire OnOpen
 			if tc.rawTLSConn.HandshakeCompleted() {
 				// fire OnOpen when handshake completed
 				out, act := h.EventHandler.OnOpen(tc)
 				if act != gnet.None {
 					return act
 				}
-				if _, err := tc.Write(out); err != nil {
-					return gnet.Close
+				if len(out) > 0 {
+					if _, err := tc.Write(out); err != nil {
+						return gnet.Close
+					}
 				}
+				break
 			}
 		}
 	}
