@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	tls2 "crypto/tls"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -51,6 +53,8 @@ func runHTTPServer() {
 		gnet.WithReusePort(true),
 	}
 
+	go clientToCall("https://127.0.0.1:443")
+
 	log.Fatal(gnettls.Run(hs, hs.addr, tlsConfig, options...))
 }
 
@@ -62,11 +66,6 @@ type httpsServer struct {
 	eng       gnet.Engine
 	pool      *goroutine.Pool
 }
-
-/*func (hs *httpsServer) OnOpen(c gnet.Conn) ([]byte, gnet.Action) {
-	// logging.Infof("OnOpen addr: %s", c.RemoteAddr().String())
-	return []byte("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nHello world!"), gnet.None
-}*/
 
 func (hs *httpsServer) OnTraffic(c gnet.Conn) (action gnet.Action) {
 	// read all get http request
@@ -86,8 +85,8 @@ func (hs *httpsServer) isHTTPRequestComplete(c gnet.Conn) bool {
 	return bytes.Contains(buf, []byte("\r\n\r\n"))
 }
 
-func (hs *httpsServer) OnClosed(c gnet.Conn, err error) (action gnet.Action) {
-	log.Printf("Closed connection on %s, error: %v", c.RemoteAddr().String(), err)
+func (hs *httpsServer) OnClose(c gnet.Conn, err error) (action gnet.Action) {
+	// logging.Infof("Closed connection on %s, error: %v", c.RemoteAddr().String(), err)
 	return
 }
 
@@ -97,4 +96,40 @@ func mustLoadCertificate() tls.Certificate {
 		log.Fatalf("Failed to load server certificate: %v", err)
 	}
 	return cert
+}
+
+func clientToCall(url string) {
+	time.Sleep(time.Second)
+	// new a http client to call
+	var httpClient = &http.Client{
+		Timeout: 5 * time.Minute,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls2.Config{
+				InsecureSkipVerify: true,
+				MaxVersion:         tls2.VersionTLS12,
+			},
+		},
+	}
+	//httpClient := http.DefaultClient
+
+	call := func() {
+		rsp, err := httpClient.Get(url)
+		if err != nil {
+			log.Printf("client call error: %v\n", err)
+			return
+		}
+		defer rsp.Body.Close()
+		data, err := io.ReadAll(rsp.Body)
+		if err != nil {
+			log.Fatalf("read data error: %v\n", err)
+		}
+		if len(data) != 12 {
+			log.Fatalf("invalid data length: %d\n", len(data))
+		}
+		log.Printf("http client call success, code: %d, data: %s\n", rsp.StatusCode, data)
+	}
+
+	for i := 0; i < 1; i++ {
+		call()
+	}
 }

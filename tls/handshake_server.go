@@ -59,9 +59,8 @@ func (c *Conn) serverHandshake(ctx context.Context) error {
 					ctx:         ctx,
 					clientHello: clientHello,
 				}
-				c.chain.then(hs.handshake)
+				return hs.handshake()
 			}
-			return nil
 		})
 	}
 	return c.chain.exec()
@@ -70,62 +69,56 @@ func (c *Conn) serverHandshake(ctx context.Context) error {
 func (hs *serverHandshakeState) handshake() error {
 	c := hs.c
 
-	c.chain.then(func() error {
-		if err := hs.processClientHello(); err != nil {
+	if err := hs.processClientHello(); err != nil {
+		return err
+	}
+
+	// For an overview of TLS handshaking, see RFC 5246, Section 7.3.
+	c.buffering = true
+	if err := hs.checkForResumption(); err != nil {
+		return err
+	}
+
+	if hs.sessionState != nil {
+		// The client has included a session ticket and so we do an abbreviated handshake.
+		if err := hs.doResumeHandshake(); err != nil {
+			return err
+		}
+		if err := hs.establishKeys(); err != nil {
+			return err
+		}
+		if err := hs.sendSessionTicket(); err != nil {
+			return err
+		}
+		if err := hs.sendFinished(c.serverFinished[:]); err != nil {
+			return err
+		}
+		if _, err := c.flush(); err != nil {
 			return err
 		}
 
-		// For an overview of TLS handshaking, see RFC 5246, Section 7.3.
-		c.buffering = true
-		if err := hs.checkForResumption(); err != nil {
-			return err
-		}
-		return nil
-	}).then(func() error {
-		if hs.sessionState != nil {
-			// The client has included a session ticket and so we do an abbreviated handshake.
-			c.chain.then(func() error {
-				if err := hs.doResumeHandshake(); err != nil {
-					return err
-				}
-				if err := hs.establishKeys(); err != nil {
-					return err
-				}
-				if err := hs.sendSessionTicket(); err != nil {
-					return err
-				}
-				if err := hs.sendFinished(c.serverFinished[:]); err != nil {
-					return err
-				}
-				if _, err := c.flush(); err != nil {
-					return err
-				}
-				return nil
-			}).then(func() error {
-				c.clientFinishedIsFirst = false
-				if err := hs.readFinished(nil); err != nil {
-					return err
-				}
+		c.chain.then(func() error {
+			c.clientFinishedIsFirst = false
+			if err := hs.readFinished(nil); err != nil {
+				return err
+			}
 
-				c.ekm = ekmFromMasterSecret(c.vers, hs.suite, hs.masterSecret, hs.clientHello.random, hs.hello.random)
-				c.isHandshakeComplete.Store(true)
-				return nil
-			})
-		} else {
-			// The client didn't include a session ticket, or it wasn't
-			// valid so we do a full handshake.
-			c.chain.then(func() error {
-				if err := hs.pickCipherSuite(); err != nil {
-					return err
-				}
-				if err := hs.doFullHandshake(); err != nil {
-					return err
-				}
-				return nil
-			})
-		}
+			c.ekm = ekmFromMasterSecret(c.vers, hs.suite, hs.masterSecret, hs.clientHello.random, hs.hello.random)
+			c.isHandshakeComplete.Store(true)
+			return nil
+		})
+
 		return nil
-	})
+	}
+
+	// The client didn't include a session ticket, or it wasn't
+	// valid so we do a full handshake.
+	if err := hs.pickCipherSuite(); err != nil {
+		return err
+	}
+	if err := hs.doFullHandshake(); err != nil {
+		return err
+	}
 
 	return nil
 }
