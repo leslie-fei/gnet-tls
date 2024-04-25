@@ -20,7 +20,15 @@ func (c *chain) exec() error {
 	if len(c.calls) == 0 {
 		return errors.New("chain calls length is zero")
 	}
-	c.err = c.calls[0]()
+	err := c.calls[0]()
+
+	// data not enough should read next round, else remove current call function
+	if errors.Is(err, ErrNotEnough) {
+		return err
+	}
+
+	c.err = err
 	c.calls = c.calls[1:]
-	return c.err
+
+	return err
 }
