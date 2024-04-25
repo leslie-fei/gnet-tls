@@ -37,11 +37,10 @@ type Conn struct {
 	// isHandshakeComplete is true if the connection is currently transferring
 	// application data (i.e. is not currently processing a handshake).
 	// isHandshakeComplete is true implies handshakeErr == nil.
-	isHandshakeComplete  atomic.Bool
-	isWaitClientFinished atomic.Bool
-	handshakeState       int8
-	hs                   interface{ handshake() error }
-	readClientFinished   func() error
+	isHandshakeComplete atomic.Bool
+	chain               *chain // handshake call chain
+	//handshakeState       int8
+	//hs                   interface{ handshake() error }
 	// constant after handshake; protected by handshakeMutex
 	handshakeMutex sync.Mutex
 	handshakeErr   error   // error resulting from handshake

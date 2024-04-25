@@ -185,7 +185,7 @@ func (h *tlsEventHandler) OnTraffic(c gnet.Conn) (action gnet.Action) {
 				break
 			}
 			err := tc.rawTLSConn.Handshake()
-			// 读完以后还是这么大
+			// no data is read
 			if buffered == tc.raw.InboundBuffered() {
 				noReadCount++
 			} else {
