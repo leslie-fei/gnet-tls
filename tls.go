@@ -176,48 +176,46 @@ func (h *tlsEventHandler) OnTraffic(c gnet.Conn) (action gnet.Action) {
 	tc := c.Context().(*tlsConn)
 
 	// TLS handshake
-	if !tc.rawTLSConn.HandshakeCompleted() {
-		buffered := tc.raw.InboundBuffered()
-		noReadCount := 0
-		for tc.raw.InboundBuffered() > 0 {
-			if noReadCount >= 10 {
-				logging.Errorf("max retry handshake inbound buffered: %d", tc.raw.InboundBuffered())
-				return gnet.Close
-			}
-			err := tc.rawTLSConn.Handshake()
-			// no data is read
-			if buffered == tc.raw.InboundBuffered() {
-				noReadCount++
-			} else {
-				noReadCount = 0
-			}
+	buffered := tc.raw.InboundBuffered()
+	noReadCount := 0
+	for !tc.rawTLSConn.HandshakeCompleted() && tc.raw.InboundBuffered() > 0 {
+		if noReadCount >= 10 {
+			logging.Errorf("max retry handshake inbound buffered: %d", tc.raw.InboundBuffered())
+			return gnet.Close
+		}
+		err := tc.rawTLSConn.Handshake()
+		// no data is read
+		if buffered == tc.raw.InboundBuffered() {
+			noReadCount++
+		} else {
+			noReadCount = 0
+		}
 
-			buffered = tc.raw.InboundBuffered()
+		buffered = tc.raw.InboundBuffered()
 
-			// data not enough wait for next round
-			if errors.Is(err, tls.ErrNotEnough) {
-				return gnet.None
+		// data not enough wait for next round
+		if errors.Is(err, tls.ErrNotEnough) {
+			return gnet.None
+		}
+
+		if err != nil {
+			logging.Error(err)
+			return gnet.Close
+		}
+
+		// handshake completed to fire OnOpen
+		if tc.rawTLSConn.HandshakeCompleted() {
+			// fire OnOpen when handshake completed
+			out, act := h.EventHandler.OnOpen(tc)
+			if act != gnet.None {
+				return act
 			}
-
-			if err != nil {
-				logging.Error(err)
-				return gnet.Close
-			}
-
-			// handshake completed to fire OnOpen
-			if tc.rawTLSConn.HandshakeCompleted() {
-				// fire OnOpen when handshake completed
-				out, act := h.EventHandler.OnOpen(tc)
-				if act != gnet.None {
-					return act
+			if len(out) > 0 {
+				if _, err := tc.Write(out); err != nil {
+					return gnet.Close
 				}
-				if len(out) > 0 {
-					if _, err := tc.Write(out); err != nil {
-						return gnet.Close
-					}
-				}
-				break
 			}
+			break
 		}
 	}
 
